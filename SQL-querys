@@ -82,6 +82,13 @@ join (
 --Задание 6
 --Найдите процентное соотношение перелетов по типам самолетов от общего количества. (Подзапрос или окно, Оператор ROUND)
 
+select distinct aircraft_code, --код самолёта
+	(count(flight_id) over (partition by aircraft_code)) count_flight_aircraft, --количество перелётов по типам самолета
+	round(((count(flight_id) over (partition by aircraft_code))::numeric*100/(select count(flight_id)::numeric from flights f)), 2) || ' %' 
+		as percent_f_a --процентное соотношение количества перелётов по типам самолётов к общему количеству перелётов
+from flights 
+group by aircraft_code,  flight_id;  --группируем по коду самолёта и идентификатору перелёта
+
 --Задание 7
 --Были ли города, в которые можно  добраться бизнес - классом дешевле, чем эконом-классом в рамках перелета? (CTE)
 
