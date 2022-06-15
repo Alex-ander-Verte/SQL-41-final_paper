@@ -92,6 +92,22 @@ group by aircraft_code,  flight_id;  --группируем по коду сам
 --Задание 7
 --Были ли города, в которые можно  добраться бизнес - классом дешевле, чем эконом-классом в рамках перелета? (CTE)
 
+with cte1 as (
+	select flight_id, min(amount) filter (where fare_conditions = 'Business') min_amount_business, --минимальная стоимость билета бизнесс-класса
+		max(amount) filter (where fare_conditions = 'Economy') max_amount_economy --максимальная стоимость билета эконом-класса
+	from ticket_flights tf 
+	group by flight_id --группируем по идентификатору перелёта
+)
+select flight_id, --выводим идентификатор перелёта
+	case 
+		--сравниваем минимальную стоимость билета бизнесс-класса и максимальную стоимость билета эконом-класса 
+		--и выводим соответствующую надпись
+		when min_amount_business < max_amount_economy then 'Да, бизнес-класс дешевле' 
+		else 'Нет, бизнесс-класс дороже'
+	end case_bis_or_eco
+from cte1
+where min_amount_business < max_amount_economy --выводим только те записи, где бизнесс-класс дешевле эконома
+
 --Задание 8
 --Между какими городами нет прямых рейсов? (Декартово произведение в предложении FROM, Самостоятельно созданные представления
 --(если облачное подключение, то без представления), Оператор EXCEPT)
