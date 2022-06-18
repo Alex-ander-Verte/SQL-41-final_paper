@@ -143,3 +143,47 @@ from city_flights
 --Вычислите расстояние между аэропортами, связанными прямыми рейсами, сравните с допустимой максимальной дальностью перелетов  в самолетах, обслуживающих эти рейсы *
 --(Оператор RADIANS или использование sind/cosd, CASE)
 
+select
+	distinct on (dep.flight_no) dep.flight_no,
+	dep.aircraft_code, 	dep."range",
+	dep.departure_airport, 	dep.departure_city, dep.departure_longitude, dep.departure_latitude,
+	arr.arrival_airport, arr.arrival_city, arr.arrival_longitude, arr.arrival_latitude,
+	-- выводим для каждого номера рейса аэропорт, город отправления и прибытия, и их координаты + код самолёта и макс дальность полёта
+	acos(sin(radians(dep.departure_latitude))* sin(radians(arr.arrival_latitude))+ cos(radians(dep.departure_latitude))*
+	cos(radians(arr.arrival_latitude))* cos(radians(dep.departure_longitude)-radians(arr.arrival_longitude)))* 6371 as distance,
+	--выводим расстояние между аэропортами
+	case 
+		when dep."range" > acos(sin(radians(dep.departure_latitude))* sin(radians(arr.arrival_latitude))+ cos(radians(dep.departure_latitude))*
+		cos(radians(arr.arrival_latitude))* cos(radians(dep.departure_longitude)-radians(arr.arrival_longitude)))* 6371 
+		then round((dep."range" - acos(sin(radians(dep.departure_latitude))* sin(radians(arr.arrival_latitude))+ cos(radians(dep.departure_latitude))*
+		cos(radians(arr.arrival_latitude))* cos(radians(dep.departure_longitude)-radians(arr.arrival_longitude)))* 6371)::numeric, 2) || ' km. ' || ' Всё хорошо, самолёт соответствует требованиям'
+		else round((dep."range" - acos(sin(radians(dep.departure_latitude))* sin(radians(arr.arrival_latitude))+ cos(radians(dep.departure_latitude))*
+		cos(radians(arr.arrival_latitude))* cos(radians(dep.departure_longitude)-radians(arr.arrival_longitude)))* 6371)::numeric, 2) || ' km. ' || ' Внимание! Самолёт не соответствует требованиям'
+	end range_distance_contrast 
+	--сравниваем макс дальность полёта самолёта, назначенного на рейс, с расстоянием между пунктами перелёта.
+	--и выводим разницу двух величин с комментарием, соответствует ли самолёт требованиям  по дальности полёта
+from (select
+		f.flight_no,
+		a2.aircraft_code,
+		a2."range",
+		f.departure_airport,
+		a.city departure_city,
+		a.longitude departure_longitude,
+		a.latitude departure_latitude
+	from flights f
+	join airports a on f.departure_airport = a.airport_code
+	join aircrafts a2 on f.aircraft_code = a2.aircraft_code 
+	) dep --в подзапросе выводим номера рейсов, аэропорта и города отправления, и их координаты + код самолёта и макс дальность полёта
+join (select
+		f.flight_no,
+		a2.aircraft_code,
+		a2."range",
+		f.arrival_airport,
+		a.city arrival_city,
+		a.longitude arrival_longitude,
+		a.latitude arrival_latitude
+	from flights f
+	join airports a on f.arrival_airport = a.airport_code
+	join aircrafts a2 on f.aircraft_code = a2.aircraft_code 
+	) arr --в подзапросе выводим номера рейсов, аэропорта и города прибытия, и их координаты + код самолёта и макс дальность полёта
+on dep.flight_no = arr.flight_no; --соединяем данные по отправлениям и по прибытиям (из подзапросов) по номеру рейса
