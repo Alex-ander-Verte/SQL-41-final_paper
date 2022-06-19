@@ -52,7 +52,7 @@ select
 	t.flight_id, t.flight_no,t.departure_airport, t.status, t.aircraft_code, t.actual_departure::date, t.count_seat_flight, t1.all_seats,
 	all_seats-count_seat_flight as count_seat_free, --количество свободных мест для каждого рейса
 	(all_seats-count_seat_flight)* 100 / all_seats || ' %' as percent_free_seats, --процентное отношение свободных мест к общему количеству мест в самолёте
-	sum(count_seat_flight) over (partition by t.departure_airport order by t.actual_departure::date) cumulative_total --накопительный итог 
+	sum(count_seat_flight) over (partition by t.departure_airport, t.actual_departure::date order by t.actual_departure) cumulative_total --накопительный итог 
 	--по количеству вывезенных пассажиров из каждого аэропорта на каждый день
 from
 	(
@@ -62,7 +62,7 @@ from
 		f.departure_airport, --аэропорт вылета
 		f.status, --статус рейса
 		f.aircraft_code, --код самолёта
-		f.actual_departure::date, --берём фактическую дату вылета без учёта времени
+		f.actual_departure, --берём фактическую дату вылета без учёта времени
 		count(bp.seat_no) over (partition by f.flight_id) count_seat_flight --количество занятых мест для каждого рейса
 	from
 		flights f
@@ -83,8 +83,7 @@ join (
 		aircraft_code
 ) t1 on
 	t.aircraft_code = t1.aircraft_code --обогащаем данными из таблицы с общим количеством мест в самолёте
-	group by t.flight_id, t.flight_no,t.departure_airport, t.status, t.aircraft_code, t.actual_departure::date, t.count_seat_flight, t1.all_seats --группируем для вывода данных
-	
+	group by t.flight_id, t.flight_no,t.departure_airport, t.status, t.aircraft_code, t.actual_departure, t.count_seat_flight, t1.all_seats --группируем для вывода данных
 --Задание 6
 --Найдите процентное соотношение перелетов по типам самолетов от общего количества. (Подзапрос или окно, Оператор ROUND)
 
