@@ -131,9 +131,12 @@ create view city_flights as
 		on dep.flight_no = arr.flight_no
 
 
-select a.city as city1, a2.city as city2 --выводим пары городов, по которыми нет рейсов
-from airports a
-cross join airports a2 --декартово произведение для городов, все возможные сочетания пар городов
+select t.city1, t.city2 --выводим пары городов, по которыми нет рейсов
+from (select a.city as city1, a2.city as city2
+	from airports a
+	cross join airports a2
+	where a.city != a2.city --убираем пары значений, в которых один и тот же город
+	) t --декартово произведение для городов, все возможные сочетания пар городов
 except --вычитаем строки с парами городов, по которым етсь рейсы
 select departure_city as city1, arrival_city as city2
 from city_flights
